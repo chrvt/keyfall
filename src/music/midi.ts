@@ -1,6 +1,7 @@
 import * as ToneMidi from '@tonejs/midi'
 import type { Hand, Note, Song } from './types.ts'
 import { buildMeasures, finalizeSong } from './types.ts'
+import { fixHands } from './hands.ts'
 
 // works both as a bundled ES module and as CommonJS under Node
 const Midi: typeof ToneMidi.Midi = (ToneMidi as any).Midi ?? (ToneMidi as any).default.Midi
@@ -19,6 +20,8 @@ export interface MidiOpts {
   fifths?: number
   /** split pitch used when the file has a single track */
   split?: number
+  /** set to false to keep the hands exactly as the file's tracks (or the split) give them */
+  fixHands?: boolean
 }
 
 export function parseMidi(data: ArrayBuffer | Uint8Array, opts: MidiOpts): Song {
@@ -54,6 +57,7 @@ export function parseMidi(data: ArrayBuffer | Uint8Array, opts: MidiOpts): Song 
   }
   // snap tiny offsets (humanised files) to a fine grid so chords line up
   for (const n of notes) n.beat = Math.round(n.beat * 96) / 96
+  if (opts.fixHands !== false) fixHands(notes)
 
   const sigs = midi.header.timeSignatures.map((t) => ({
     beat: t.ticks / ppq,
